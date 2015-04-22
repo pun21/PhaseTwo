@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class ColorDBHelper extends SQLiteOpenHelper{
 
-    static private final String DB_NAME = "Colors.db";
+    static private final String DB_NAME = "colors.db";
     static private final int DB_VERSION = 1;
 
     public ColorDBHelper(Context context) {
