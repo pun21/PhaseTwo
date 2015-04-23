@@ -44,6 +44,7 @@ public class ColorContentProvider extends ContentProvider {
         int uriType = sURIMatcher.match(uri);
 
         SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
+        //sets the list of tables to query
         queryBuilder.setTables(ColorTable.COLOR_TABLE);
 
         switch(uriType) {

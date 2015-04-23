@@ -16,9 +16,9 @@ import java.util.ArrayList;
 
 public class CustomFragment extends ListFragment {
 
-    private static int MAX_SATURATION = 1;
-    private static int MAX_VALUE = 1;
-    private static int HUE_RANGE;
+    private static float MAX_SATURATION = 1;
+    private static float MAX_VALUE = 1;
+    private static float HUE_RANGE;
     private static int NUM_ROWS;
 
     private ArrayList<float[]> hsvList;
@@ -68,7 +68,7 @@ public class CustomFragment extends ListFragment {
         }
 
         mTag = bundle.getString("tag");
-        HUE_RANGE = bundle.getInt("hRange");
+        HUE_RANGE = bundle.getFloat("hRange");
 
         if (!hsvList.isEmpty())
             hsvList.clear();

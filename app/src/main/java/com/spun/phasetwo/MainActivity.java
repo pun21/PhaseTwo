@@ -3,15 +3,20 @@ package com.spun.phasetwo;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.app.LoaderManager;
-import android.content.Loader;
-import android.database.Cursor;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 
-public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class MainActivity extends Activity {
 
     //region variables
     private static float MAX_SATURATION = 1;
@@ -22,6 +27,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
     private static int NUM_HUE_ROWS = 360/(int)HUE_RANGE;
     private static int NUM_SATURATION_ROWS = (int)(MAX_SATURATION/SATURATION_DIFF);
     private static int NUM_VALUE_ROWS = (int)(MAX_VALUE/VALUE_DIFF)+1;
+    private static final int NUMBER_OF_COLORS = 1178;
 
     private Bundle savedBundle;
     private ArrayList<float[]> hsvList;
@@ -33,12 +39,28 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
     private float h;
     private float s;
     private float v;
+    private boolean mDbExists;
     //endregion
 
     //region Lifecycle and related methods
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        mDbExists = settings.getBoolean("db", false);
+
+        //insert colors from csv file if this is the first time installing the application
+        if (!mDbExists) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mDbExists = initDB();
+                }
+            });
+            thread.start();
+        }
 
         if (savedInstanceState == null) {
             ArrayList<float[]> hsvList = setHSV(0, 0, 0);
@@ -64,6 +86,48 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             mFragmentIndex++;
         }
         savedBundle = savedInstanceState;
+    }
+    @Override
+    protected void onStop(){
+        super.onStop();
+
+        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("db", mDbExists);
+
+        editor.commit();
+    }
+
+    private boolean initDB() {
+        String colorName;
+        int colorNum;
+        float colorHue, colorSaturation, colorValue;
+        ContentValues contentValues = new ContentValues();
+        InputStream in = getResources().openRawResource(R.raw.colors);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String str = "";
+        try {
+            while ((str = br.readLine()) != null) {
+                String[] data = str.split(",");
+                colorName = data[0];
+                colorNum = Integer.parseInt(data[1], 16);
+                colorHue = (float)Integer.parseInt(data[2]);
+                Log.d("MainActivity", "colorHue = " + colorHue + ", colorName = " + colorName);
+                colorSaturation = (float)Integer.parseInt(data[3]);
+                colorValue = (float)Integer.parseInt(data[4]);
+                contentValues.put(ColorTable.COLUMN_NAME, colorName);
+                contentValues.put(ColorTable.COLUMN_COLOR_NUMBER, colorNum);
+                contentValues.put(ColorTable.COLUMN_HUE, colorHue);
+                contentValues.put(ColorTable.COLUMN_SATURATION, colorSaturation);
+                contentValues.put(ColorTable.COLUMN_VALUE, colorValue);
+                getContentResolver().insert(ColorContentProvider.CONTENT_URI, contentValues);
+            }
+            br.close();
+        } catch (IOException e) {
+            Log.d("MainActivity", "IOException caught in initDB()");
+            e.printStackTrace();
+        }
+        return true;
     }
     @Override
     protected void onResume() {
@@ -225,20 +289,5 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             valuesFragment.setTag(mFragmentIndex);
             mFragmentIndex++;
         }
-    }
-
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        return null;
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-
     }
 }
