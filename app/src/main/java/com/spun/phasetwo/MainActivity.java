@@ -4,9 +4,9 @@ import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -48,11 +48,11 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         mDbExists = settings.getBoolean("db", false);
 
         //insert colors from csv file if this is the first time installing the application
-        if (!mDbExists) {
+        if (mDbExists == false) {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -87,20 +87,10 @@ public class MainActivity extends Activity {
         }
         savedBundle = savedInstanceState;
     }
-    @Override
-    protected void onStop(){
-        super.onStop();
-
-        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putBoolean("db", mDbExists);
-
-        editor.commit();
-    }
 
     private boolean initDB() {
         String colorName;
-        int colorNum;
+        String colorNum;
         float colorHue, colorSaturation, colorValue;
         ContentValues contentValues = new ContentValues();
         InputStream in = getResources().openRawResource(R.raw.colors);
@@ -110,7 +100,7 @@ public class MainActivity extends Activity {
             while ((str = br.readLine()) != null) {
                 String[] data = str.split(",");
                 colorName = data[0];
-                colorNum = Integer.parseInt(data[1], 16);
+                colorNum = data[1];
                 colorHue = (float)Integer.parseInt(data[2]);
                 Log.d("MainActivity", "colorHue = " + colorHue + ", colorName = " + colorName);
                 colorSaturation = (float)Integer.parseInt(data[3]);
@@ -144,6 +134,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("db", mDbExists);
+
+        editor.commit();
     }
     @Override
     protected void onSaveInstanceState(Bundle outState) {

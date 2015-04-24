@@ -9,26 +9,33 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Log;
 
 public class ColorContentProvider extends ContentProvider {
 
     private ColorDBHelper db;
     private static final String AUTHORITY = "com.spun.phasetwo.provider";
     private static final String BASE_PATH = "colors";
+    private static final String HUE_PATH = "hue";
     /*MIME type for a content: URI containing a Cursor of zero or more items.*/
     private static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/colors";
     private static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/color";
     public static final String CONTENT_URI_PREFIX = "content://" + AUTHORITY + "/" + BASE_PATH + "/";
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH);
 
+
     //set up the URIMatcher
     private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     private static final int ALL_COLORS = 1;
     private static final int COLOR_NUMBER = 2;
+    private static final int COLOR_HUE = 3;
+
+
     static {
         sURIMatcher.addURI(AUTHORITY, BASE_PATH, ALL_COLORS);
         sURIMatcher.addURI(AUTHORITY, BASE_PATH + "/#", COLOR_NUMBER);
+        sURIMatcher.addURI(AUTHORITY, BASE_PATH + "/"+HUE_PATH+"/#/#", COLOR_HUE);
     }
 
     @Override
@@ -46,17 +53,24 @@ public class ColorContentProvider extends ContentProvider {
         SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
         //sets the list of tables to query
         queryBuilder.setTables(ColorTable.COLOR_TABLE);
-
+        String segment = uri.getLastPathSegment();
         switch(uriType) {
             case ALL_COLORS:
                 break;
             case COLOR_NUMBER:
                 queryBuilder.appendWhere(ColorTable.COLUMN_ID + "=" + uri.getLastPathSegment());
                 break;
+            case COLOR_HUE:
+                Log.d("insert", "before append");
+                queryBuilder.appendWhere((ColorTable.COLUMN_HUE+" >= "+uri.getLastPathSegment()));
+                Log.d("insert", "after append");
+                //queryBuilder.appendWhere((ColorTable.COLUMN_HUE+" <= "+uri.getLastPathSegment()));
+                break;
             default:
                 throw new IllegalArgumentException("Invalid URI: " + uri);
         }
         SQLiteDatabase database = db.getWritableDatabase();
+        Log.d("insert", "selection = " + selection);
         Cursor cursor = queryBuilder.query(database, projection, selection, selectionArgs, null, null, sortOrder);
 
         cursor.setNotificationUri(getContext().getContentResolver(), uri);
