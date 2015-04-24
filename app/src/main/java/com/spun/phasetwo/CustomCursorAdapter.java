@@ -22,10 +22,7 @@ public class CustomCursorAdapter extends CursorAdapter {
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
         View row = LayoutInflater.from(context).inflate(R.layout.list_item, parent, false);
-        //ViewHolder viewHolder = new ViewHolder();
-//        viewHolder.tv = (TextView) row.findViewById(R.id.text);
-//
-//        row.setTag(viewHolder);
+
         return row;
     }
 

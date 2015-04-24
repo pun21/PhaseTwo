@@ -1,29 +1,39 @@
 package com.spun.phasetwo;
 
+import android.app.AlertDialog;
 import android.app.ListFragment;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
 public class CustomFragment extends ListFragment {
 
+    private static final int NUMBER_OF_COLORS = 1178;
     private static float MAX_SATURATION = 1;
     private static float MAX_VALUE = 1;
     private static float HUE_RANGE;
     private static int NUM_ROWS;
-
+    private AlertDialog.Builder alertDialogBuilder;
+    private AlertDialog alertDialog;
     private ArrayList<float[]> hsvList;
     private boolean first_created = false;
     private String mTag;
+    private int mLimit;
+    private String mPrefsKey;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -37,6 +47,60 @@ public class CustomFragment extends ListFragment {
         setListAdapter(new LevelTwoAdapter(getActivity(), hsvList));
     }
 
+    private void setPrefsKey() {
+        switch(mTag) {
+            case "First":
+                mPrefsKey = "hue_swatches_limit";
+                break;
+            case "Second":
+                mPrefsKey = "saturation_swatches_limit";
+                break;
+            case "Third":
+                mPrefsKey = "value_swatches_limit";
+        }
+    }
+    public void dialog() {
+        alertDialogBuilder = new AlertDialog.Builder(getActivity());
+
+        final SeekBar slider = new SeekBar(getActivity());
+        slider.setMax(NUMBER_OF_COLORS);
+        // set title and message
+        alertDialogBuilder
+                .setTitle("Swatch Limit");
+        alertDialogBuilder.setMessage("Choose the maximum number of color swatches you wish to see displayed");
+        alertDialogBuilder.setView(slider);
+
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        // create alert dialog
+        alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
+    }
+
     //empty constructor
     public CustomFragment() {}
 
@@ -47,8 +111,30 @@ public class CustomFragment extends ListFragment {
             Bundle bundle = this.getArguments();
             setVariables(bundle);
         }
+        if (mTag.equals("First")) {
+            setButtonGone((View) view.getParent().getParent());
+        }
+        else if (mTag != "First") {
+            setButton((View) view.getParent().getParent());
+        }
         // remove the dividers from the ListView of the ListFragment
         getListView().setDivider(null);
+    }
+
+    private void setButtonGone(View v) {
+        Button button = (Button) v.findViewById(R.id.button);
+        button.setVisibility(View.GONE);
+    }
+    private void setButton(View v) {
+        Button button = (Button) v.findViewById(R.id.button);
+        button.setVisibility(View.VISIBLE);
+        button.setText("Configure color swatches");
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog();
+            }
+        });
     }
 
     @Override
@@ -68,6 +154,11 @@ public class CustomFragment extends ListFragment {
         }
 
         mTag = bundle.getString("tag");
+        setPrefsKey();
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        mLimit = settings.getInt(mPrefsKey, -1);
+
         HUE_RANGE = bundle.getFloat("hRange");
 
         if (!hsvList.isEmpty())

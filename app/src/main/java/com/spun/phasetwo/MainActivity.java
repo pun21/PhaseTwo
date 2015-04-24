@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
         */
             FragmentManager fm = getFragmentManager();
             FragmentTransaction ft = fm.beginTransaction();
-            ft.add(android.R.id.content, huesFragment, mFragmentTag[mFragmentIndex]);
+            ft.add(R.id.frame, huesFragment, mFragmentTag[mFragmentIndex]);
             ft.addToBackStack(null);
             ft.commit();
             mFragmentIndex++;
@@ -223,7 +223,7 @@ public class MainActivity extends Activity {
             }
 
             saturationFragment.setArguments(bundle);
-            ft.replace(android.R.id.content, saturationFragment, mFragmentTag[mFragmentIndex++]);
+            ft.replace(R.id.frame, saturationFragment, mFragmentTag[mFragmentIndex++]);
         }
         else if (mFragmentTag[mFragmentIndex] == "Third") {
             if (valuesFragment == null)
@@ -241,7 +241,7 @@ public class MainActivity extends Activity {
                 valuesFragment.setArguments(null);
 
             valuesFragment.setArguments(bundle);
-            ft.replace(android.R.id.content, valuesFragment, mFragmentTag[mFragmentIndex++]);
+            ft.replace(R.id.frame, valuesFragment, mFragmentTag[mFragmentIndex++]);
         }
         else {
             if (namedColorsFragment == null)
@@ -258,7 +258,7 @@ public class MainActivity extends Activity {
                 namedColorsFragment.setArguments(null);
 
             namedColorsFragment.setArguments(bundle);
-            ft.replace(android.R.id.content, namedColorsFragment, mFragmentTag[mFragmentIndex++]);
+            ft.replace(R.id.frame, namedColorsFragment, mFragmentTag[mFragmentIndex++]);
         }
 
         ft.addToBackStack(null);

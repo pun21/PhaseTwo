@@ -1,56 +1,57 @@
 package com.spun.phasetwo;
 
+import android.app.AlertDialog;
+import android.app.DialogFragment;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class NamedColorsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
+import java.util.Arrays;
+import java.util.HashMap;
+
+public class NamedColorsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor>, SortingOptionsDialogFragment.NoticeDialogListener {
+    //region variables
     private static float delta = .2f;
     private static float HUE_RANGE = 15;
+    private final String[] orderOptions  = {"hsv", "hvs", "shv", "svh", "vhs", "vsh"};
 
+    private AlertDialog.Builder alertDialogBuilder;
+    private AlertDialog alertDialog;
     private String selection = null;
     private String[] selectionArgs = null;
     private CustomCursorAdapter adapter;
     private LoaderManager.LoaderCallbacks<Cursor> mCallbacks;
     private String mTag;
     float[] hsv;
-    //region ORDER_BY_
-    static public final String ORDER_BY_HSV = ColorTable.COLUMN_HUE + "," +
-                                              ColorTable.COLUMN_SATURATION + "," +
-                                              ColorTable.COLUMN_VALUE;
-    static public final String ORDER_BY_HVS = ColorTable.COLUMN_HUE + "," +
-                                              ColorTable.COLUMN_VALUE+ "," +
-                                              ColorTable.COLUMN_SATURATION;
-    static public final String ORDER_BY_SHV = ColorTable.COLUMN_SATURATION + "," +
-                                              ColorTable.COLUMN_HUE + "," +
-                                              ColorTable.COLUMN_VALUE;
-    static public final String ORDER_BY_SVH = ColorTable.COLUMN_SATURATION + "," +
-                                              ColorTable.COLUMN_VALUE + "," +
-                                              ColorTable.COLUMN_HUE;
-    static public final String ORDER_BY_VHS = ColorTable.COLUMN_VALUE + "," +
-                                              ColorTable.COLUMN_HUE + "," +
-                                              ColorTable.COLUMN_SATURATION;
-    static public final String ORDER_BY_VSH = ColorTable.COLUMN_VALUE + "," +
-                                              ColorTable.COLUMN_SATURATION + "," +
-                                              ColorTable.COLUMN_HUE;
+    private View someView;
+    private View parentView;
+    private String mSortingOption = "hsv";
+    private HashMap<String, String> ORDER_BY;
     //endregion
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        initOrderByMap();
         Bundle bundle = this.getArguments();
         mTag = bundle.getString("tag");
         //HUE_RANGE = bundle.getFloat("hRange");
         hsv = bundle.getFloatArray("hsv");
         getLoaderManager().initLoader(0, null, this);
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        mSortingOption = settings.getString("sortOrder", null);
 
         adapter = new CustomCursorAdapter(getActivity(), null);
 
@@ -106,6 +107,42 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
         selection = ColorTable.COLUMN_SATURATION + " between "+String.valueOf(lowPercent)+" and "+String.valueOf(highPercent);
     }
 
+    private void showDialog() {
+        DialogFragment sortingDialog = new SortingOptionsDialogFragment();
+
+        Bundle bundle = new Bundle();
+        int index = Arrays.asList(orderOptions).indexOf(mSortingOption);
+        bundle.putInt("index", index);
+        if (sortingDialog.getArguments() != null)
+            sortingDialog.setArguments(null);
+
+        sortingDialog.setArguments(bundle);
+
+        sortingDialog.show(getFragmentManager(), "sortingDialog");
+    }
+
+    private void initOrderByMap() {
+        ORDER_BY = new HashMap<>();
+        ORDER_BY.put("hsv", ColorTable.COLUMN_HUE + "," +
+                ColorTable.COLUMN_SATURATION + "," +
+                ColorTable.COLUMN_VALUE);
+        ORDER_BY.put("hvs", ColorTable.COLUMN_HUE + "," +
+                ColorTable.COLUMN_VALUE+ "," +
+                ColorTable.COLUMN_SATURATION);
+        ORDER_BY.put("shv", ColorTable.COLUMN_SATURATION + "," +
+                ColorTable.COLUMN_HUE + "," +
+                ColorTable.COLUMN_VALUE);
+        ORDER_BY.put("svh", ColorTable.COLUMN_SATURATION + "," +
+                ColorTable.COLUMN_VALUE + "," +
+                ColorTable.COLUMN_HUE);
+        ORDER_BY.put("vhs", ColorTable.COLUMN_VALUE + "," +
+                ColorTable.COLUMN_HUE + "," +
+                ColorTable.COLUMN_SATURATION);
+        ORDER_BY.put("vsh", ColorTable.COLUMN_VALUE + "," +
+                ColorTable.COLUMN_SATURATION + "," +
+                ColorTable.COLUMN_HUE);
+    }
+
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         adapter.swapCursor(data);
@@ -119,10 +156,22 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        setOptionsButton((View) view.getParent().getParent());
         // remove the dividers from the ListView of the ListFragment
         getListView().setDivider(null);
     }
 
+    private void setOptionsButton(View v) {
+        Button button = (Button) v.findViewById(R.id.button);
+        button.setVisibility(View.VISIBLE);
+        button.setText("Configure sorting options");
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDialog();
+            }
+        });
+    }
     @Override
     public void onListItemClick(ListView listView, View v, int position, long id) {
         super.onListItemClick(listView, v, position, id);
@@ -139,5 +188,15 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
         Toast.makeText(getActivity(), colorInfo, Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    public void onDialogPositiveClick(int optionSelected) {
+        mSortingOption = orderOptions[optionSelected];
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("sortOrder", mSortingOption);
+
+        editor.commit();
+    }
 }
 
