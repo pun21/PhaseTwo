@@ -1,9 +1,8 @@
 package com.spun.phasetwo;
 
-import android.app.AlertDialog;
+import android.app.DialogFragment;
 import android.app.ListFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -15,20 +14,17 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
-public class CustomFragment extends ListFragment {
+public class CustomFragment extends ListFragment implements SwatchLimitDialogFragment.nNoticeDialogListener {
 
     private static final int NUMBER_OF_COLORS = 1178;
     private static float MAX_SATURATION = 1;
     private static float MAX_VALUE = 1;
     private static float HUE_RANGE;
     private static int NUM_ROWS;
-    private AlertDialog.Builder alertDialogBuilder;
-    private AlertDialog alertDialog;
     private ArrayList<float[]> hsvList;
     private boolean first_created = false;
     private String mTag;
@@ -39,9 +35,13 @@ public class CustomFragment extends ListFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+
         hsvList = new ArrayList<>();
         Bundle bundle = this.getArguments();
         setVariables(bundle);
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        NUM_ROWS = settings.getInt(mPrefsKey, 256);
 
         first_created = true;
         setListAdapter(new LevelTwoAdapter(getActivity(), hsvList));
@@ -58,47 +58,6 @@ public class CustomFragment extends ListFragment {
             case "Third":
                 mPrefsKey = "value_swatches_limit";
         }
-    }
-    public void dialog() {
-        alertDialogBuilder = new AlertDialog.Builder(getActivity());
-
-        final SeekBar slider = new SeekBar(getActivity());
-        slider.setMax(NUMBER_OF_COLORS);
-        // set title and message
-        alertDialogBuilder
-                .setTitle("Swatch Limit");
-        alertDialogBuilder.setMessage("Choose the maximum number of color swatches you wish to see displayed");
-        alertDialogBuilder.setView(slider);
-
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-
-        alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-
-        // create alert dialog
-        alertDialog = alertDialogBuilder.create();
-
-        // show it
-        alertDialog.show();
     }
 
     //empty constructor
@@ -132,9 +91,28 @@ public class CustomFragment extends ListFragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dialog();
+                showDialog();
             }
         });
+    }
+    private void showDialog() {
+        DialogFragment swatchLimitDialog = new SwatchLimitDialogFragment();
+
+        Bundle bundle = new Bundle();
+        bundle.putString("fragmentTag", mTag);
+        int which;
+        if (mTag.equals("Second"))
+            which = 0;
+        else
+            which = 1;
+        bundle.putInt("whichfragment", which);
+        bundle.putInt(mPrefsKey, mLimit);
+        if (swatchLimitDialog.getArguments() != null)
+            swatchLimitDialog.setArguments(null);
+
+        swatchLimitDialog.setArguments(bundle);
+
+        swatchLimitDialog.show(getFragmentManager(), mTag + " swatch_dialog");
     }
 
     @Override
@@ -157,7 +135,7 @@ public class CustomFragment extends ListFragment {
         setPrefsKey();
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        mLimit = settings.getInt(mPrefsKey, -1);
+        mLimit = settings.getInt(mPrefsKey, 256);
 
         HUE_RANGE = bundle.getFloat("hRange");
 
@@ -179,6 +157,29 @@ public class CustomFragment extends ListFragment {
                 break;
             case 3: mTag = "Fourth";
         }
+    }
+
+    @Override
+    public void onDialogPositiveClick(int limit) {
+        boolean changedLimit = onChangeSwatchLimit(limit);
+        mLimit = limit;
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putInt(mPrefsKey, mLimit);
+
+        editor.commit();
+
+        if(changedLimit) {
+            //todo another query
+
+        }
+    }
+    private boolean onChangeSwatchLimit(int limit) {
+        if (mLimit == limit)
+            return false;
+
+        return true;
     }
 
     public class LevelTwoAdapter extends ArrayAdapter<float[]> {

@@ -24,6 +24,13 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
     private static float delta = .2f;
     private static float HUE_RANGE = 15;
     private final String[] orderOptions  = {"hsv", "hvs", "shv", "svh", "vhs", "vsh"};
+    private final String[] projection = {
+            ColorTable.COLUMN_ID,
+            ColorTable.COLUMN_NAME,
+            ColorTable.COLUMN_COLOR_NUMBER,
+            ColorTable.COLUMN_HUE,
+            ColorTable.COLUMN_SATURATION,
+            ColorTable.COLUMN_VALUE};
 
     private AlertDialog.Builder alertDialogBuilder;
     private AlertDialog alertDialog;
@@ -33,9 +40,7 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
     private LoaderManager.LoaderCallbacks<Cursor> mCallbacks;
     private String mTag;
     float[] hsv;
-    private View someView;
-    private View parentView;
-    private String mSortingOption = "hsv";
+    private String mSortingOption;
     private HashMap<String, String> ORDER_BY;
     //endregion
 
@@ -51,7 +56,7 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
         getLoaderManager().initLoader(0, null, this);
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        mSortingOption = settings.getString("sortOrder", null);
+        mSortingOption = settings.getString("sortOrder", "hsv");
 
         adapter = new CustomCursorAdapter(getActivity(), null);
 
@@ -70,25 +75,18 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
-        String[] projection = {
-                ColorTable.COLUMN_ID,
-                ColorTable.COLUMN_NAME,
-                ColorTable.COLUMN_COLOR_NUMBER,
-                ColorTable.COLUMN_HUE,
-                ColorTable.COLUMN_SATURATION,
-                ColorTable.COLUMN_VALUE};
         float hueStart = hsv[0]-HUE_RANGE;
         float hueStop = hsv[0]+HUE_RANGE;
         float saturationStart = 100*(hsv[1]-delta);
         float saturationStop = 100*(hsv[1]+delta);
         float valueStart = 100*(hsv[2]-delta);
         float valueStop = 100*(hsv[2]+delta);
+
         selection = ColorTable.COLUMN_HUE+" >= "+ hueStart+ " and "+ColorTable.COLUMN_HUE + " <= "+hueStop+" and "+(ColorTable.COLUMN_SATURATION + " between " + String.valueOf(saturationStart) + " and " + String.valueOf(saturationStop))
         + " and "+(ColorTable.COLUMN_VALUE + " between " + String.valueOf(valueStart) + " and " + String.valueOf(valueStop));
 
-        String orderBy = ColorTable.COLUMN_HUE;
         setSelectionSaturationBetween(15, 20);
-        CursorLoader cursorLoader = new CursorLoader(getActivity(), ColorContentProvider.CONTENT_URI, projection, selection, selectionArgs, orderBy);
+        CursorLoader cursorLoader = new CursorLoader(getActivity(), ColorContentProvider.CONTENT_URI, projection, selection, selectionArgs, ORDER_BY.get(mSortingOption));
 
         return cursorLoader;
     }
@@ -190,6 +188,7 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
 
     @Override
     public void onDialogPositiveClick(int optionSelected) {
+        boolean sortOrderChanged = onSortOrderChanged(orderOptions[optionSelected]);
         mSortingOption = orderOptions[optionSelected];
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
@@ -197,6 +196,16 @@ public class NamedColorsFragment extends ListFragment implements LoaderManager.L
         editor.putString("sortOrder", mSortingOption);
 
         editor.commit();
+
+        if (sortOrderChanged)
+            getLoaderManager().restartLoader(0, null, this);
+    }
+
+    private boolean onSortOrderChanged(String sort) {
+        if (mSortingOption.equals(sort))
+            return false;
+
+        return true;
     }
 }
 

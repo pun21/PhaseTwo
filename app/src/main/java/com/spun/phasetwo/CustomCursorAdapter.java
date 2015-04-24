@@ -28,7 +28,6 @@ public class CustomCursorAdapter extends CursorAdapter {
 
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
-        //ViewHolder viewHolder = updateValues(view, cursor);
         TextView textView = (TextView) view.findViewById(R.id.text);
 
         String color = cursor.getString(cursor.getColumnIndexOrThrow(ColorTable.COLUMN_COLOR_NUMBER));
@@ -41,17 +40,4 @@ public class CustomCursorAdapter extends CursorAdapter {
         textView.setTextSize(18);
     }
 
-//    private ViewHolder updateValues(View view, Cursor cursor) {
-//        ViewHolder viewHolder = (ViewHolder) view.getTag();
-//
-//
-//        String text = cursor.getString(cursor.getColumnIndexOrThrow(ColorTable.COLUMN_NAME));
-//        int count = cursor.getCount();
-//        Log.d("cursor count", String.valueOf(count));
-//        viewHolder.tv.setText(text);
-//        viewHolder.tv.setTextSize(22);
-//        viewHolder.tv.setBackgroundColor(Color.parseColor(color));
-//
-//        return viewHolder;
-//    }
 }
