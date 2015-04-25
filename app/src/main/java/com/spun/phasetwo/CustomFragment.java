@@ -2,20 +2,15 @@ package com.spun.phasetwo;
 
 import android.app.DialogFragment;
 import android.app.ListFragment;
-import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 public class CustomFragment extends ListFragment implements SwatchLimitDialogFragment.nNoticeDialogListener {
@@ -24,27 +19,24 @@ public class CustomFragment extends ListFragment implements SwatchLimitDialogFra
     private static float MAX_SATURATION = 1;
     private static float MAX_VALUE = 1;
     private static float HUE_RANGE;
-    private static int NUM_ROWS;
     private ArrayList<float[]> hsvList;
     private boolean first_created = false;
     private String mTag;
     private int mLimit;
     private String mPrefsKey;
+    private LevelTwoAdapter adapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
         hsvList = new ArrayList<>();
         Bundle bundle = this.getArguments();
         setVariables(bundle);
 
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        NUM_ROWS = settings.getInt(mPrefsKey, 256);
-
         first_created = true;
-        setListAdapter(new LevelTwoAdapter(getActivity(), hsvList));
+        adapter = new LevelTwoAdapter(getActivity(), hsvList);
+        setListAdapter(adapter);
     }
 
     private void setPrefsKey() {
@@ -125,19 +117,51 @@ public class CustomFragment extends ListFragment implements SwatchLimitDialogFra
     }
 
     private void setVariables(Bundle bundle) {
-        NUM_ROWS = bundle.getInt("num_rows");
-        float hsv[][] = new float[NUM_ROWS][];
-        for (int i = 0; i < hsv.length; i++) {
-            hsv[i] = bundle.getFloatArray("color "+i);
+        float[] temp;
+        if (bundle != null) {
+            HUE_RANGE = bundle.getFloat("hRange");
+            temp = bundle.getFloatArray("color " + 0);
+            mTag = bundle.getString("tag");
+            setPrefsKey();
+
+        }else {
+            temp = hsvList.get(0);
         }
-
-        mTag = bundle.getString("tag");
-        setPrefsKey();
-
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getActivity());
         mLimit = settings.getInt(mPrefsKey, 256);
+        float hsv[][];
+        float h = temp[0];
+        float s = temp[1];
 
-        HUE_RANGE = bundle.getFloat("hRange");
+
+        if (mTag.equals("First")) {
+            mLimit = bundle.getInt("num_rows", 10);
+            hsv = new float[mLimit][];
+            for (int i = 0; i < hsv.length; i++) {
+                hsv[i] = bundle.getFloatArray("color "+i);
+            }
+        }
+        else if (mTag.equals("Second")) {
+            double diff = 1.0/mLimit;
+            hsv = new float[mLimit][];
+            BigDecimal d = new BigDecimal(Double.toString(diff));
+            float f = d.floatValue();
+            for (int i = 0; i < mLimit; i++) {
+                float[] t = {h, 0+(i*(float)diff), 1};
+                hsv[i] = t;
+            }
+        }else if (mTag.equals("Third")) {
+            double diff = 1.0/mLimit;
+            BigDecimal d = new BigDecimal(Double.toString(diff));
+            float f = d.floatValue();
+            hsv = new float[mLimit][];
+            for (int i = 0; i < mLimit; i++) {
+                float[] t = {h, s, 0+(i*(float)diff)};
+                hsv[i] = t;
+            }
+        }else {
+            hsv = new float[mLimit][];
+        }
 
         if (!hsvList.isEmpty())
             hsvList.clear();
@@ -171,10 +195,12 @@ public class CustomFragment extends ListFragment implements SwatchLimitDialogFra
         editor.commit();
 
         if(changedLimit) {
-            //todo another query
-
+            setVariables(null);
+            ((BaseAdapter) ((ListView)getListView()).getAdapter()).notifyDataSetChanged();
+            //adapter.notifyDataSetChanged();
         }
     }
+
     private boolean onChangeSwatchLimit(int limit) {
         if (mLimit == limit)
             return false;
@@ -182,68 +208,5 @@ public class CustomFragment extends ListFragment implements SwatchLimitDialogFra
         return true;
     }
 
-    public class LevelTwoAdapter extends ArrayAdapter<float[]> {
-        private int size;
-        public LevelTwoAdapter(Context context, ArrayList<float[]> hsvList) {
-            super(context, R.layout.list_item, hsvList);
-            size = hsvList.size();
-        }
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
 
-            if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item, parent, false);
-            }
-
-            TextView textView = (TextView) convertView.findViewById(R.id.text);
-            float[] hsv = getItem(position);
-            int colorLeft = Color.WHITE;
-            int colorRight = Color.WHITE;
-
-            if (mTag == "First") {
-                //vary the hue, constant 100% saturation, constant 100%value*/
-
-                colorLeft = Color.HSVToColor(hsv);
-                if (position < size - 1)
-                    colorRight = Color.HSVToColor(getItem(position + 1));
-                else {
-                    float[] color = getItem(position);
-                    color[0] = color[0] + HUE_RANGE;
-                    colorRight = Color.HSVToColor(color);
-                }
-                GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{colorLeft, colorRight});
-                textView.setBackground(drawable);
-            }
-            else if (mTag == "Second") {
-                /*keep the hue range the same, vary the saturation, constant 100%value*/
-                colorLeft = Color.HSVToColor(hsv);
-                if (position < size - 1)
-                    colorRight = Color.HSVToColor(getItem(position + 1));
-                else {
-                    float[] color = getItem(position);
-                    color[0] = color[0] - 30;
-                    color[1] = color[1] - MAX_SATURATION/size;
-                    colorRight = Color.HSVToColor(color);
-                }
-                GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{colorLeft, colorRight});
-                textView.setBackground(drawable);
-            }
-            else if (mTag == "Third") {
-                /*keep the hue range and the saturation range the same, vary the value*/
-                colorLeft = Color.HSVToColor(hsv);
-                if (position < size - 1)
-                    colorRight = Color.HSVToColor(getItem(position + 1));
-                else {
-                    float[] color = getItem(position);
-                    color[0] = color[0] - 30;
-                    color[2] = color[2] - MAX_VALUE/size;
-                    colorRight = Color.HSVToColor(color);
-                }
-                GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{colorLeft, colorRight});
-                textView.setBackground(drawable);
-            }
-
-            return convertView;
-        }
-    }
 }

@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
     //region variables
     private static float MAX_SATURATION = 1;
     private static float MAX_VALUE = 1;
-    private static float HUE_RANGE = 30;
+    private static float HUE_RANGE = 60;
     private static float SATURATION_DIFF = .1f;
     private static float VALUE_DIFF = .1f;
     private static int NUM_HUE_ROWS = 360/(int)HUE_RANGE;
@@ -216,6 +216,7 @@ public class MainActivity extends Activity {
             for (int i = 0; i < hsvList.size(); i++) {
                 bundle.putFloatArray("color "+i, hsvList.get(i));
             }
+            bundle.putFloat("hRange", HUE_RANGE);
             bundle.putString("tag", mFragmentTag[mFragmentIndex]);
             bundle.putInt("num_rows", NUM_SATURATION_ROWS);
             if (saturationFragment.getArguments() != null) {
@@ -237,6 +238,7 @@ public class MainActivity extends Activity {
             }
             bundle.putString("tag", mFragmentTag[mFragmentIndex]);
             bundle.putInt("num_rows", NUM_VALUE_ROWS);
+            bundle.putFloat("hRange", HUE_RANGE);
             if (valuesFragment.getArguments() != null)
                 valuesFragment.setArguments(null);
 

@@ -21,8 +21,8 @@ import java.util.HashMap;
 
 public class NamedColorsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor>, SortingOptionsDialogFragment.NoticeDialogListener {
     //region variables
-    private static float delta = .2f;
-    private static float HUE_RANGE = 15;
+    private static float delta = .1f;
+    private static float HUE_RANGE = 10;
     private final String[] orderOptions  = {"hsv", "hvs", "shv", "svh", "vhs", "vsh"};
     private final String[] projection = {
             ColorTable.COLUMN_ID,
